@@ -11,6 +11,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;800&display=swap" rel="stylesheet">
 <style>
+  [class*="netlify"],
+[id*="netlify"],
+a[href*="netlify.com"],
+a[href*="netlify.app"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 :root{--asphalt:#0a1428;--panel:#12203d;--line:#27395f;--lamp:#ff3b30;--tail:#ff3b30;--ok:#3ddc84;--chalk:#f2efe8;--steel:#93a3c4;--sky:#6ea8ff}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{height:100%}
