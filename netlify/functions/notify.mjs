@@ -1,6 +1,23 @@
 const OK = new Set(['visit', 'start', 'stage2', 'stage3', 'win', 'dm']);
+const ALLOWED_ORIGINS = new Set([
+  'https://ba9ala.me',
+  'https://www.ba9ala.me',
+  'https://a7mdride.netlify.app'
+]);
 const esc = s => String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const clip = (s, n) => String(s || '').slice(0, n);
+
+function corsHeaders(origin) {
+  const h = {
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin'
+  };
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    h['Access-Control-Allow-Origin'] = origin;
+  }
+  return h;
+}
 
 function iphoneModel(scr, dpr) {
   const [w, h] = String(scr || '').split('x').map(Number).sort((a, b) => a - b);
@@ -49,19 +66,28 @@ function device(b) {
 }
 
 export default async (req, context) => {
-  if (req.method !== 'POST') return new Response('ok');
-  const origin = req.headers.get('origin');
-  if (origin) {
-    try { if (new URL(origin).host !== new URL(req.url).host) return new Response('no', { status: 403 }); }
-    catch (e) { return new Response('no', { status: 403 }); }
+  const origin = req.headers.get('origin') || '';
+  const headers = corsHeaders(origin);
+
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers });
   }
+
+  if (req.method !== 'POST') {
+    return new Response('ok', { headers });
+  }
+
+  if (origin && !ALLOWED_ORIGINS.has(origin)) {
+    return new Response('no', { status: 403, headers });
+  }
+
   let b;
-  try { b = await req.json(); } catch (e) { return new Response('bad', { status: 400 }); }
-  if (!b || !OK.has(b.e)) return new Response('bad', { status: 400 });
+  try { b = await req.json(); } catch (e) { return new Response('bad', { status: 400, headers }); }
+  if (!b || !OK.has(b.e)) return new Response('bad', { status: 400, headers });
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chat = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chat) return new Response('not configured', { status: 500 });
+  if (!token || !chat) return new Response('not configured', { status: 500, headers });
 
   const g = (context && context.geo) || {};
   const place = [g.city, g.subdivision && g.subdivision.name, g.country && g.country.name].filter(Boolean).join(', ') || 'unknown';
@@ -92,7 +118,7 @@ export default async (req, context) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: chat, text: lines.join('\n'), parse_mode: 'HTML' })
   });
-  return new Response('ok');
+  return new Response('ok', { headers });
 };
 
 export const config = { path: '/api/notify' };
